@@ -1,5 +1,5 @@
 {
 	"require": {
-		"s9e/text-formatter": "dev-release/php5.6"
+		"s9e/text-formatter": "*"
 	}
 }

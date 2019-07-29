@@ -3,9 +3,17 @@
 use s9e\TextFormatter\Bundles\Fatdown;
 
 $text = (substr($_GET['text'], 0, 1000));
+$cacheFile = __DIR__ . '/cache/' . sha1($text) . '.json';
 
 header('Content-type: application/json');
 
+if (file_exists($cacheFile))
+{
+	readfile($cacheFile);
+	exit;
+}
+
+//include __DIR__ . '/vendor/s9e/text-formatter/src/autoloader.php';
 include __DIR__ . '/vendor/autoload.php';
 
 $xml  = Fatdown::parse($text);
@@ -14,13 +22,21 @@ $json = '{"name":"s9e\\\\TextFormatter (Fatdown/PHP)","version":"","html":' . js
 
 /*
 $json = preg_replace_callback(
-        '/(?<!\\\\)((?:\\\\\\\\)*)\\\\u([a-f\\d]{4})/',
-        function ($m)
-        {
-                return $m[1] . iconv('UCS-4LE', 'UTF-8', pack('V', hexdec($m[2])));
-        },
-        $json
+	'/(?<!\\\\)((?:\\\\\\\\)*)\\\\u([a-f\\d]{4})/',
+	function ($m)
+	{
+		return $m[1] . iconv('UCS-4LE', 'UTF-8', pack('V', hexdec($m[2])));
+	},
+	$json
 );
 */
 
 echo $json;
+
+if (!mt_rand(0, 9999))
+{
+	array_map('unlink', glob(__DIR__ . '/cache/*'));
+}
+
+file_put_contents($cacheFile, $json);
+file_put_contents(substr($cacheFile, 0, -4) . 'md', $text);
