@@ -2,7 +2,7 @@
 
 use s9e\TextFormatter\Bundles\Fatdown;
 
-$text = (substr($_GET['text'], 0, 1000));
+$text      = (substr($_GET['text'], 0, 1000));
 $cacheFile = __DIR__ . '/cache/' . sha1($text) . '.json';
 
 header('Content-type: application/json');
@@ -13,7 +13,6 @@ if (file_exists($cacheFile))
 	exit;
 }
 
-//include __DIR__ . '/vendor/s9e/text-formatter/src/autoloader.php';
 include __DIR__ . '/vendor/autoload.php';
 
 $xml  = Fatdown::parse($text);
