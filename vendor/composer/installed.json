@@ -79,7 +79,7 @@
         "extra": {
             "version": "2.1.0"
         },
-        "installation-source": "source",
+        "installation-source": "dist",
         "autoload": {
             "psr-4": {
                 "s9e\\TextFormatter\\": "src"
