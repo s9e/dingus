@@ -2,7 +2,7 @@
 
 use s9e\TextFormatter\Bundles\Fatdown;
 
-$text      = (substr($_GET['text'], 0, 10000));
+$text      = (substr($_GET['text'], 0, 1000));
 $cacheFile = __DIR__ . '/cache/' . sha1($text) . '.json';
 
 header('Content-type: application/json');
