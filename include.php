@@ -3447,3 +3447,5 @@ class Superscript extends AbstractScript
 		$this->parseAbstractScript('SUP', '^', '/\\^(?!\\()[^\\x17\\s^()]++\\^?/', '/\\^\\([^\\x17()]++\\)/');
 	}
 }
+namespace s9e\TextFormatter;
+const VERSION = '2.1.0';

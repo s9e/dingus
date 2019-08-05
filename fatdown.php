@@ -2,7 +2,7 @@
 
 use s9e\TextFormatter\Bundles\Fatdown;
 
-$text      = (substr($_GET['text'], 0, 1000));
+$text      = (substr($_GET['text'], 0, 10000));
 $cacheFile = __DIR__ . '/cache/' . sha1($text) . '.json';
 
 header('Content-type: application/json');
@@ -17,7 +17,7 @@ include __DIR__ . '/include.php';
 
 $xml  = Fatdown::parse($text);
 $html = Fatdown::render($xml);
-$json = '{"name":"s9e\\\\TextFormatter (Fatdown/PHP)","version":"","html":' . json_encode($html) . '}';
+$json = '{"name":"s9e\\\\TextFormatter (Fatdown/PHP)","version":"' . s9e\TextFormatter\VERSION . '","html":' . json_encode($html) . '}';
 
 /*
 $json = preg_replace_callback(

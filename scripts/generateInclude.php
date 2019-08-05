@@ -87,6 +87,19 @@ foreach ($classNamesByScore as $classNames)
 	}
 }
 
+$version = '';
+$composer = json_decode(file_get_contents(__DIR__ . '/../composer.lock'));
+foreach ($composer->packages as $package)
+{
+	if ($package->name === 's9e/text-formatter')
+	{
+		$version = $package->version;
+		break;
+	}
+}
+
+$file .= "\nnamespace s9e\\TextFormatter;\nconst VERSION = " . var_export($version, true) . ";\n";
+
 $file = preg_replace('(\\n\\s*/\\*\\*.*?\\*/)s', '', $file);
 $file = preg_replace('(\\n\\s*//.*)', '', $file);
 
