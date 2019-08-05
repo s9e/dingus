@@ -13,19 +13,19 @@ include __DIR__ . '/../vendor/autoload.php';
 Fatdown::render(Fatdown::parse('*x*'));
 
 $scores = $relations = array();
-foreach (get_declared_classes() as $className)
+foreach (filterNamespace(get_declared_classes()) as $className)
 {
 	$scores[$className] = 0;
 	$relations[$className] = array();
 	$class = new ReflectionClass($className);
-	foreach ($class->getInterfaceNames() as $interfaceName)
+	foreach (filterNamespace($class->getInterfaceNames()) as $interfaceName)
 	{
 		$scores[$interfaceName] = 0;
 		$relations[$className][] = $interfaceName;
 	}
 	if (method_exists($class, 'getTraitNames'))
 	{
-		foreach ($class->getTraitNames() as $traitName)
+		foreach (filterNamespace($class->getTraitNames()) as $traitName)
 		{
 			$scores[$traitName] = 0;
 			$relations[$className][] = $traitName;
@@ -37,6 +37,17 @@ foreach (get_declared_classes() as $className)
 		$parentName = $parentClass->getName();
 		$relations[$className][] = $parentName;
 	}
+}
+
+function filterNamespace(array $fqns)
+{
+	return array_filter(
+		$fqns,
+		function ($fqn)
+		{
+			return (strpos($fqn, 's9e\\TextFormatter\\') === 0);
+		}
+	);
 }
 
 do
@@ -71,10 +82,6 @@ foreach ($classNamesByScore as $classNames)
 	sort($classNames);
 	foreach ($classNames as $className)
 	{
-		if (strpos($className, 's9e\\TextFormatter\\') !== 0)
-		{
-			continue;
-		}
 		$filepath = $rootDir . strtr(substr($className, 17), '\\', '/') . '.php';
 		$file .= substr(file_get_contents($filepath), 5);
 	}
