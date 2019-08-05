@@ -13,7 +13,7 @@ if (file_exists($cacheFile))
 	exit;
 }
 
-include __DIR__ . '/vendor/autoload.php';
+include __DIR__ . '/include.php';
 
 $xml  = Fatdown::parse($text);
 $html = Fatdown::render($xml);
