@@ -41,17 +41,17 @@
     },
     {
         "name": "s9e/text-formatter",
-        "version": "2.1.0",
-        "version_normalized": "2.1.0.0",
+        "version": "2.1.1",
+        "version_normalized": "2.1.1.0",
         "source": {
             "type": "git",
             "url": "https://github.com/s9e/TextFormatter.git",
-            "reference": "6902c1dc06fccea08565b8966c5a2cf01e3bc85f"
+            "reference": "0c6ba01d3a30ee01c3ac7dd66a87712023a88962"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/6902c1dc06fccea08565b8966c5a2cf01e3bc85f",
-            "reference": "6902c1dc06fccea08565b8966c5a2cf01e3bc85f",
+            "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/0c6ba01d3a30ee01c3ac7dd66a87712023a88962",
+            "reference": "0c6ba01d3a30ee01c3ac7dd66a87712023a88962",
             "shasum": ""
         },
         "require": {
@@ -63,7 +63,7 @@
         },
         "require-dev": {
             "matthiasmullie/minify": "*",
-            "phpunit/phpunit": "^7 || ^8.2"
+            "phpunit/phpunit": "^7 || 8.2.*"
         },
         "suggest": {
             "ext-curl": "Improves the performance of the MediaEmbed plugin and some JavaScript minifiers",
@@ -74,10 +74,10 @@
             "ext-xsl": "Enables the XSLT renderer",
             "ext-zlib": "Enables gzip compression when scraping content via the MediaEmbed plugin"
         },
-        "time": "2019-07-24T10:59:43+00:00",
+        "time": "2019-08-05T06:08:54+00:00",
         "type": "library",
         "extra": {
-            "version": "2.1.0"
+            "version": "2.1.1"
         },
         "installation-source": "dist",
         "autoload": {

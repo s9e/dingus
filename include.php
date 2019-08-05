@@ -3435,7 +3435,7 @@ class Subscript extends AbstractScript
 {
 	public function parse()
 	{
-		$this->parseAbstractScript('SUB', '~', '/~(?!\\()[^\\x17\\s~()]++~?/', '/~\\([^\\x17()]+\\)/');
+		$this->parseAbstractScript('SUB', '~', '/~[^\\x17\\s!"#$%&\'()*+,\\-.\\/:;<=>?@[\\]^_`{}|~]++~?/', '/~\\([^\\x17()]++\\)/');
 	}
 }
 namespace s9e\TextFormatter\Plugins\Litedown\Parser\Passes;
@@ -3444,8 +3444,8 @@ class Superscript extends AbstractScript
 {
 	public function parse()
 	{
-		$this->parseAbstractScript('SUP', '^', '/\\^(?!\\()[^\\x17\\s^()]++\\^?/', '/\\^\\([^\\x17()]++\\)/');
+		$this->parseAbstractScript('SUP', '^', '/\\^[^\\x17\\s!"#$%&\'()*+,\\-.\\/:;<=>?@[\\]^_`{}|~]++\\^?/', '/\\^\\([^\\x17()]++\\)/');
 	}
 }
 namespace s9e\TextFormatter;
-const VERSION = '2.1.0';
+const VERSION = '2.1.1';
