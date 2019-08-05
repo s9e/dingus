@@ -1,1 +1,5 @@
-s9e\\TextFormatter dingus
+s9e\\TextFormatter dingus.
+
+### Installation
+
+Upload both `fatdown.php` and `include.php` to your server. Make sure the same directory contains a writable directory named `cache`.
