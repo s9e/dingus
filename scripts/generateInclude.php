@@ -9,8 +9,41 @@ if (php_sapi_name() !== 'cli')
 }
 
 include __DIR__ . '/../vendor/autoload.php';
+preload('Parser/*.php');
+preload('Parser/AttributeFilters/*.php');
+preload('Plugins/Autoemail/Parser.php');
+preload('Plugins/Autolink/Parser.php');
+preload('Plugins/Escaper/Parser.php');
+preload('Plugins/FancyPants/Parser.php');
+preload('Plugins/HTMLComments/Parser.php');
+preload('Plugins/HTMLElements/Parser.php');
+preload('Plugins/HTMLEntities/Parser.php');
+preload('Plugins/MediaEmbed/Parser.php');
+preload('Plugins/PipeTables/Parser.php');
 
-Fatdown::render(Fatdown::parse('*x*'));
+function preload($path)
+{
+	$path = __DIR__ . '/../vendor/s9e/text-formatter/src/' . $path;
+	foreach (glob($path) as $filepath)
+	{
+		include_once($filepath);
+	}
+}
+
+Fatdown::render(Fatdown::parse('https://example.org/img.png
+![..](https://example.org/img.png)
+[..](https://example.org/img.png)
+example@example.org
+https://www.youtube.com/watch?v=QH2-TGUlwu4
+\\\\
+"quotes"
+<!-- -->
+<b>..</b>
+&amp;
+
+a|b
+-|-
+c|d'));
 
 $scores = $relations = array();
 foreach (filterNamespace(get_declared_classes()) as $className)

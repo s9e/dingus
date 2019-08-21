@@ -1281,6 +1281,329 @@ class Parser
 		return sprintf('%8x%d%8x%d%8x%8x', $tag->getPos(), $prioFlag, $prio, $lenFlag, $lenOrder, $tagIndex);
 	}
 }
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class EmailFilter
+{
+	public static function filter($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_EMAIL);
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class FalseFilter
+{
+	public static function filter($attrValue)
+	{
+		return false;
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class HashmapFilter
+{
+	public static function filter($attrValue, array $map, $strict)
+	{
+		if (isset($map[$attrValue]))
+		{
+			return $map[$attrValue];
+		}
+
+		return ($strict) ? false : $attrValue;
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class MapFilter
+{
+	public static function filter($attrValue, array $map)
+	{
+		foreach ($map as $pair)
+		{
+			if (preg_match($pair[0], $attrValue))
+			{
+				return $pair[1];
+			}
+		}
+
+		return $attrValue;
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class NetworkFilter
+{
+	public static function filterIp($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_IP);
+	}
+	public static function filterIpport($attrValue)
+	{
+		if (preg_match('/^\\[([^\\]]+)(\\]:[1-9][0-9]*)$/D', $attrValue, $m))
+		{
+			$ip = self::filterIpv6($m[1]);
+
+			if ($ip === false)
+			{
+				return false;
+			}
+
+			return '[' . $ip . $m[2];
+		}
+
+		if (preg_match('/^([^:]+)(:[1-9][0-9]*)$/D', $attrValue, $m))
+		{
+			$ip = self::filterIpv4($m[1]);
+
+			if ($ip === false)
+			{
+				return false;
+			}
+
+			return $ip . $m[2];
+		}
+
+		return false;
+	}
+	public static function filterIpv4($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+	}
+	public static function filterIpv6($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+use s9e\TextFormatter\Parser\Logger;
+
+class NumericFilter
+{
+	public static function filterFloat($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_FLOAT);
+	}
+	public static function filterInt($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_INT);
+	}
+	public static function filterRange($attrValue, $min, $max, Logger $logger = null)
+	{
+		$attrValue = filter_var($attrValue, FILTER_VALIDATE_INT);
+
+		if ($attrValue === false)
+		{
+			return false;
+		}
+
+		if ($attrValue < $min)
+		{
+			if (isset($logger))
+			{
+				$logger->warn(
+					'Value outside of range, adjusted up to min value',
+					[
+						'attrValue' => $attrValue,
+						'min'       => $min,
+						'max'       => $max
+					]
+				);
+			}
+
+			return $min;
+		}
+
+		if ($attrValue > $max)
+		{
+			if (isset($logger))
+			{
+				$logger->warn(
+					'Value outside of range, adjusted down to max value',
+					[
+						'attrValue' => $attrValue,
+						'min'       => $min,
+						'max'       => $max
+					]
+				);
+			}
+
+			return $max;
+		}
+
+		return $attrValue;
+	}
+	public static function filterUint($attrValue)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_INT, [
+			'options' => ['min_range' => 0]
+		]);
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class RegexpFilter
+{
+	public static function filter($attrValue, $regexp)
+	{
+		return filter_var($attrValue, FILTER_VALIDATE_REGEXP, [
+			'options' => ['regexp' => $regexp]
+		]);
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+class TimestampFilter
+{
+	public static function filter($attrValue)
+	{
+		if (preg_match('/^(?=\\d)(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?$/D', $attrValue, $m))
+		{
+			$m += [0, 0, 0, 0];
+
+			return intval($m[1]) * 3600 + intval($m[2]) * 60 + intval($m[3]);
+		}
+
+		return NumericFilter::filterUint($attrValue);
+	}
+}
+namespace s9e\TextFormatter\Parser\AttributeFilters;
+
+use s9e\TextFormatter\Parser\Logger;
+
+class UrlFilter
+{
+	public static function filter($attrValue, array $urlConfig, Logger $logger = null)
+	{
+		$p = self::parseUrl(trim($attrValue));
+
+		$error = self::validateUrl($urlConfig, $p);
+		if (!empty($error))
+		{
+			if (isset($logger))
+			{
+				$p['attrValue'] = $attrValue;
+				$logger->err($error, $p);
+			}
+
+			return false;
+		}
+
+		return self::rebuildUrl($p);
+	}
+	protected static function parseUrl($url)
+	{
+		$regexp = '(^(?:([a-z][-+.\\w]*):)?(?://(?:([^:/?#]*)(?::([^/?#]*)?)?@)?(?:(\\[[a-f\\d:]+\\]|[^:/?#]+)(?::(\\d*))?)?(?![^/?#]))?([^?#]*)(\\?[^#]*)?(#.*)?$)Di';
+		preg_match($regexp, $url, $m);
+
+		$parts  = [];
+		$tokens = ['scheme', 'user', 'pass', 'host', 'port', 'path', 'query', 'fragment'];
+		foreach ($tokens as $i => $name)
+		{
+			$parts[$name] = (isset($m[$i + 1])) ? $m[$i + 1] : '';
+		}
+		$parts['scheme'] = strtolower($parts['scheme']);
+		$parts['host'] = rtrim(preg_replace("/\xE3\x80\x82|\xEF(?:\xBC\x8E|\xBD\xA1)/s", '.', $parts['host']), '.');
+		if (preg_match('#[^[:ascii:]]#', $parts['host']) && function_exists('idn_to_ascii'))
+		{
+			$variant = (defined('INTL_IDNA_VARIANT_UTS46')) ? INTL_IDNA_VARIANT_UTS46 : 0;
+			$parts['host'] = idn_to_ascii($parts['host'], 0, $variant);
+		}
+
+		return $parts;
+	}
+	protected static function rebuildUrl(array $p)
+	{
+		$url = '';
+		if ($p['scheme'] !== '')
+		{
+			$url .= $p['scheme'] . ':';
+		}
+		if ($p['host'] !== '')
+		{
+			$url .= '//';
+			if ($p['user'] !== '')
+			{
+				$url .= rawurlencode(urldecode($p['user']));
+
+				if ($p['pass'] !== '')
+				{
+					$url .= ':' . rawurlencode(urldecode($p['pass']));
+				}
+
+				$url .= '@';
+			}
+
+			$url .= $p['host'];
+			if ($p['port'] !== '')
+			{
+				$url .= ':' . $p['port'];
+			}
+		}
+		elseif ($p['scheme'] === 'file')
+		{
+			$url .= '//';
+		}
+		$path = $p['path'] . $p['query'] . $p['fragment'];
+		$path = preg_replace_callback(
+			'/%.?[a-f]/',
+			function ($m)
+			{
+				return strtoupper($m[0]);
+			},
+			$path
+		);
+		$url .= self::sanitizeUrl($path);
+		if (!$p['scheme'])
+		{
+			$url = preg_replace('#^([^/]*):#', '$1%3A', $url);
+		}
+
+		return $url;
+	}
+	public static function sanitizeUrl($url)
+	{
+		return preg_replace_callback(
+			'/%(?![0-9A-Fa-f]{2})|[^!#-&*-;=?-Z_a-z]/S',
+			function ($m)
+			{
+				return rawurlencode($m[0]);
+			},
+			$url
+		);
+	}
+	protected static function validateUrl(array $urlConfig, array $p)
+	{
+		if ($p['scheme'] !== '' && !preg_match($urlConfig['allowedSchemes'], $p['scheme']))
+		{
+			return 'URL scheme is not allowed';
+		}
+
+		if ($p['host'] !== '')
+		{
+			$regexp = '/^(?!-)[-a-z0-9]{0,62}[a-z0-9](?:\\.(?!-)[-a-z0-9]{0,62}[a-z0-9])*$/i';
+			if (!preg_match($regexp, $p['host']))
+			{
+				if (!NetworkFilter::filterIpv4($p['host'])
+				 && !NetworkFilter::filterIpv6(preg_replace('/^\\[(.*)\\]$/', '$1', $p['host'])))
+				{
+					return 'URL host is invalid';
+				}
+			}
+
+			if ((isset($urlConfig['disallowedHosts']) && preg_match($urlConfig['disallowedHosts'], $p['host']))
+			 || (isset($urlConfig['restrictedHosts']) && !preg_match($urlConfig['restrictedHosts'], $p['host'])))
+			{
+				return 'URL host is not allowed';
+			}
+		}
+		elseif (preg_match('(^(?:(?:f|ht)tps?)$)', $p['scheme']))
+		{
+			return 'Missing host';
+		}
+	}
+}
 namespace s9e\TextFormatter\Parser;
 
 use s9e\TextFormatter\Parser;
@@ -2067,6 +2390,82 @@ abstract class Fatdown extends \s9e\TextFormatter\Bundle
 		return unserialize('O:42:"s9e\\TextFormatter\\Bundles\\Fatdown\\Renderer":2:{s:19:"enableQuickRenderer";b:1;s:9:"' . "\0" . '*' . "\0" . 'params";a:0:{}}');
 	}
 }
+namespace s9e\TextFormatter\Plugins\Autoemail;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		$tagName  = $this->config['tagName'];
+		$attrName = $this->config['attrName'];
+
+		foreach ($matches as $m)
+		{
+			$startTag = $this->parser->addStartTag($tagName, $m[0][1], 0);
+			$startTag->setAttribute($attrName, $m[0][0]);
+			$endTag = $this->parser->addEndTag($tagName, $m[0][1] + strlen($m[0][0]), 0);
+			$startTag->pairWith($endTag);
+		}
+	}
+}
+namespace s9e\TextFormatter\Plugins\Autolink;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		foreach ($matches as $m)
+		{
+			$this->linkifyUrl($m[0][1], $this->trimUrl($m[0][0]));
+		}
+	}
+	protected function linkifyUrl($tagPos, $url)
+	{
+		if (!preg_match('/^[^:]+:|^www\\./i', $url))
+		{
+			return;
+		}
+		$endPos = $tagPos + strlen($url);
+		$endTag = $this->parser->addEndTag($this->config['tagName'], $endPos, 0);
+		if ($url[3] === '.')
+		{
+			$url = 'http://' . $url;
+		}
+		$startTag = $this->parser->addStartTag($this->config['tagName'], $tagPos, 0, 1);
+		$startTag->setAttribute($this->config['attrName'], $url);
+		$startTag->pairWith($endTag);
+		$contentTag = $this->parser->addVerbatim($tagPos, $endPos - $tagPos, 1000);
+		$startTag->cascadeInvalidationTo($contentTag);
+	}
+	protected function trimUrl($url)
+	{
+		return preg_replace('#(?![-=/)])[\\s!-.:-@[-`{-~\\pP]+$#Du', '', $url);
+	}
+}
+namespace s9e\TextFormatter\Plugins\Escaper;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		foreach ($matches as $m)
+		{
+			$this->parser->addTagPair(
+				$this->config['tagName'],
+				$m[0][1],
+				1,
+				$m[0][1] + strlen($m[0][0]),
+				0
+			);
+		}
+	}
+}
 namespace s9e\TextFormatter\Plugins\FancyPants;
 
 use s9e\TextFormatter\Plugins\ParserBase;
@@ -2297,6 +2696,116 @@ class Parser extends ParserBase
 		foreach ($matches[0] as $m)
 		{
 			$this->addTag($m[1], strlen($m[0]), $chrs[strtr($m[0], 'CMRT', 'cmrt')]);
+		}
+	}
+}
+namespace s9e\TextFormatter\Plugins\HTMLComments;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		$tagName  = $this->config['tagName'];
+		$attrName = $this->config['attrName'];
+
+		foreach ($matches as $m)
+		{
+			$content = html_entity_decode(substr($m[0][0], 4, -3), ENT_QUOTES, 'UTF-8');
+			$content = str_replace(['<', '>'], '', $content);
+			$content = rtrim($content, '-');
+			$content = str_replace('--', '', $content);
+
+			$this->parser->addSelfClosingTag($tagName, $m[0][1], strlen($m[0][0]))->setAttribute($attrName, $content);
+		}
+	}
+}
+namespace s9e\TextFormatter\Plugins\HTMLElements;
+
+use s9e\TextFormatter\Parser\Tag;
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		foreach ($matches as $m)
+		{
+			$isEnd = (bool) ($text[$m[0][1] + 1] === '/');
+
+			$pos    = $m[0][1];
+			$len    = strlen($m[0][0]);
+			$elName = strtolower($m[2 - $isEnd][0]);
+			$tagName = (isset($this->config['aliases'][$elName]['']))
+			         ? $this->config['aliases'][$elName]['']
+			         : $this->config['prefix'] . ':' . $elName;
+
+			if ($isEnd)
+			{
+				$this->parser->addEndTag($tagName, $pos, $len);
+				continue;
+			}
+			$tag = (preg_match('/(<\\S+|[\'"\\s])\\/>$/', $m[0][0]))
+			     ? $this->parser->addTagPair($tagName, $pos, $len, $pos + $len, 0)
+			     : $this->parser->addStartTag($tagName, $pos, $len);
+
+			$this->captureAttributes($tag, $elName, $m[3][0]);
+		}
+	}
+	protected function captureAttributes(Tag $tag, $elName, $str)
+	{
+		preg_match_all(
+			'/[a-z][-a-z0-9]*(?>\\s*=\\s*(?>"[^"]*"|\'[^\']*\'|[^\\s"\'=<>`]+))?/i',
+			$str,
+			$attrMatches
+		);
+
+		foreach ($attrMatches[0] as $attrMatch)
+		{
+			$pos = strpos($attrMatch, '=');
+			if ($pos === false)
+			{
+				$pos = strlen($attrMatch);
+				$attrMatch .= '=' . strtolower($attrMatch);
+			}
+			$attrName  = strtolower(trim(substr($attrMatch, 0, $pos)));
+			$attrValue = trim(substr($attrMatch, 1 + $pos));
+			if (isset($this->config['aliases'][$elName][$attrName]))
+			{
+				$attrName = $this->config['aliases'][$elName][$attrName];
+			}
+			if ($attrValue[0] === '"' || $attrValue[0] === "'")
+			{
+				$attrValue = substr($attrValue, 1, -1);
+			}
+
+			$tag->setAttribute($attrName, html_entity_decode($attrValue, ENT_QUOTES, 'UTF-8'));
+		}
+	}
+}
+namespace s9e\TextFormatter\Plugins\HTMLEntities;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	public function parse($text, array $matches)
+	{
+		$tagName  = $this->config['tagName'];
+		$attrName = $this->config['attrName'];
+
+		foreach ($matches as $m)
+		{
+			$entity = $m[0][0];
+			$chr    = html_entity_decode($entity, ENT_QUOTES, 'UTF-8');
+
+			if ($chr === $entity || ord($chr) < 32)
+			{
+				continue;
+			}
+
+			$this->parser->addSelfClosingTag($tagName, $m[0][1], strlen($entity))->setAttribute($attrName, $chr);
 		}
 	}
 }
@@ -3216,6 +3725,393 @@ class Links extends AbstractPass
 			{
 				$this->addLinkTag($startPos, $endPos, $endLen, $this->text->linkReferences[$id]);
 			}
+		}
+	}
+}
+namespace s9e\TextFormatter\Plugins\MediaEmbed;
+
+use s9e\TextFormatter\Parser as TagStack;
+use s9e\TextFormatter\Parser\Tag;
+use s9e\TextFormatter\Plugins\ParserBase;
+use s9e\TextFormatter\Utils\Http;
+
+class Parser extends ParserBase
+{
+	protected static $client;
+	protected static $clientCacheDir;
+	public function parse($text, array $matches)
+	{
+		foreach ($matches as $m)
+		{
+			$tagName = $this->config['tagName'];
+			$url     = $m[0][0];
+			$pos     = $m[0][1];
+			$len     = strlen($url);
+			$this->parser->addSelfClosingTag($tagName, $pos, $len, -10)->setAttribute('url', $url);
+		}
+	}
+	public static function filterTag(Tag $tag, TagStack $tagStack, array $hosts, array $sites, $cacheDir)
+	{
+		$tag->invalidate();
+
+		if ($tag->hasAttribute('url'))
+		{
+			$url    = $tag->getAttribute('url');
+			$siteId = self::getSiteIdFromUrl($url, $hosts);
+			if (isset($sites[$siteId]))
+			{
+				$attributes = self::getAttributes($url, $sites[$siteId], $cacheDir);
+				if (!empty($attributes))
+				{
+					self::createTag(strtoupper($siteId), $tagStack, $tag)->setAttributes($attributes);
+				}
+			}
+		}
+	}
+	protected static function addNamedCaptures(array &$attributes, $string, array $regexps)
+	{
+		$matched = 0;
+		foreach ($regexps as list($regexp, $map))
+		{
+			$matched += preg_match($regexp, $string, $m);
+			foreach ($map as $i => $name)
+			{
+				if (isset($m[$i]) && $m[$i] !== '' && $name !== '')
+				{
+					$attributes[$name] = $m[$i];
+				}
+			}
+		}
+
+		return (bool) $matched;
+	}
+	protected static function createTag($tagName, TagStack $tagStack, Tag $tag)
+	{
+		$startPos = $tag->getPos();
+		$endTag   = $tag->getEndTag();
+		if ($endTag)
+		{
+			$startLen = $tag->getLen();
+			$endPos   = $endTag->getPos();
+			$endLen   = $endTag->getLen();
+		}
+		else
+		{
+			$startLen = 0;
+			$endPos   = $tag->getPos() + $tag->getLen();
+			$endLen   = 0;
+		}
+
+		return $tagStack->addTagPair($tagName, $startPos, $startLen, $endPos, $endLen, $tag->getSortPriority());
+	}
+	protected static function getAttributes($url, array $config, $cacheDir)
+	{
+		$attributes = [];
+		self::addNamedCaptures($attributes, $url, $config[0]);
+		foreach ($config[1] as $scrapeConfig)
+		{
+			self::scrape($attributes, $url, $scrapeConfig, $cacheDir);
+		}
+
+		return $attributes;
+	}
+	protected static function getHttpClient($cacheDir)
+	{
+		if (!isset(self::$client) || self::$clientCacheDir !== $cacheDir)
+		{
+			self::$client = (isset($cacheDir)) ? Http::getCachingClient($cacheDir) : Http::getClient();
+			self::$clientCacheDir = $cacheDir;
+		}
+
+		return self::$client;
+	}
+	protected static function getSiteIdFromUrl($url, array $hosts)
+	{
+		$host = (preg_match('(^https?://([^/]+))', strtolower($url), $m)) ? $m[1] : '';
+		while ($host > '')
+		{
+			if (isset($hosts[$host]))
+			{
+				return $hosts[$host];
+			}
+			$host = preg_replace('(^[^.]*.)', '', $host);
+		}
+
+		return '';
+	}
+	protected static function interpolateVars($str, array $vars)
+	{
+		return preg_replace_callback(
+			'(\\{@(\\w+)\\})',
+			function ($m) use ($vars)
+			{
+				return (isset($vars[$m[1]])) ? $vars[$m[1]] : '';
+			},
+			$str
+		);
+	}
+	protected static function scrape(array &$attributes, $url, array $config, $cacheDir)
+	{
+		$vars = [];
+		if (self::addNamedCaptures($vars, $url, $config['match']))
+		{
+			if (isset($config['url']))
+			{
+				$url = self::interpolateVars($config['url'], $vars + $attributes);
+			}
+			if (preg_match('(^https?://[^#]+)i', $url, $m))
+			{
+				$response = self::wget($m[0], $cacheDir, $config);
+				self::addNamedCaptures($attributes, $response, $config['extract']);
+			}
+		}
+	}
+	protected static function wget($url, $cacheDir, $config)
+	{
+		$options = [
+			'headers' => (isset($config['header'])) ? (array) $config['header'] : []
+		];
+
+		return @self::getHttpClient($cacheDir)->get($url, $options);
+	}
+}
+namespace s9e\TextFormatter\Plugins\PipeTables;
+
+use s9e\TextFormatter\Plugins\ParserBase;
+
+class Parser extends ParserBase
+{
+	protected $pos;
+	protected $table;
+	protected $tableTag;
+	protected $tables;
+	protected $text;
+	public function parse($text, array $matches)
+	{
+		$this->text = $text;
+		if ($this->config['overwriteMarkdown'])
+		{
+			$this->overwriteMarkdown();
+		}
+		if ($this->config['overwriteEscapes'])
+		{
+			$this->overwriteEscapes();
+		}
+
+		$this->captureTables();
+		$this->processTables();
+
+		unset($this->tables);
+		unset($this->text);
+	}
+	protected function addLine($line)
+	{
+		$ignoreLen = 0;
+
+		if (!isset($this->table))
+		{
+			$this->table = [];
+			preg_match('/^ */', $line, $m);
+			$ignoreLen = strlen($m[0]);
+			$line      = substr($line, $ignoreLen);
+		}
+		$line = preg_replace('/^( *)\\|/', '$1 ', $line);
+		$line = preg_replace('/\\|( *)$/', ' $1', $line);
+
+		$this->table['rows'][] = ['line' => $line, 'pos' => $this->pos + $ignoreLen];
+	}
+	protected function addTableBody()
+	{
+		$i   = 1;
+		$cnt = count($this->table['rows']);
+		while (++$i < $cnt)
+		{
+			$this->addTableRow('TD', $this->table['rows'][$i]);
+		}
+
+		$this->createBodyTags($this->table['rows'][2]['pos'], $this->pos);
+	}
+	protected function addTableCell($tagName, $align, $text)
+	{
+		$startPos  = $this->pos;
+		$endPos    = $startPos + strlen($text);
+		$this->pos = $endPos;
+
+		preg_match('/^( *).*?( *)$/', $text, $m);
+		if ($m[1])
+		{
+			$ignoreLen = strlen($m[1]);
+			$this->createIgnoreTag($startPos, $ignoreLen);
+			$startPos += $ignoreLen;
+		}
+		if ($m[2])
+		{
+			$ignoreLen = strlen($m[2]);
+			$this->createIgnoreTag($endPos - $ignoreLen, $ignoreLen);
+			$endPos -= $ignoreLen;
+		}
+
+		$this->createCellTags($tagName, $startPos, $endPos, $align);
+	}
+	protected function addTableHead()
+	{
+		$this->addTableRow('TH', $this->table['rows'][0]);
+		$this->createHeadTags($this->table['rows'][0]['pos'], $this->pos);
+	}
+	protected function addTableRow($tagName, $row)
+	{
+		$this->pos = $row['pos'];
+		foreach (explode('|', $row['line']) as $i => $str)
+		{
+			if ($i > 0)
+			{
+				$this->createIgnoreTag($this->pos, 1);
+				++$this->pos;
+			}
+
+			$align = (empty($this->table['cols'][$i])) ? '' : $this->table['cols'][$i];
+			$this->addTableCell($tagName, $align, $str);
+		}
+
+		$this->createRowTags($row['pos'], $this->pos);
+	}
+	protected function captureTables()
+	{
+		unset($this->table);
+		$this->tables = [];
+
+		$this->pos = 0;
+		foreach (explode("\n", $this->text) as $line)
+		{
+			if (strpos($line, '|') === false)
+			{
+				$this->endTable();
+			}
+			else
+			{
+				$this->addLine($line);
+			}
+			$this->pos += 1 + strlen($line);
+		}
+		$this->endTable();
+	}
+	protected function createBodyTags($startPos, $endPos)
+	{
+		$this->parser->addTagPair('TBODY', $startPos, 0, $endPos, 0, -103);
+	}
+	protected function createCellTags($tagName, $startPos, $endPos, $align)
+	{
+		if ($startPos === $endPos)
+		{
+			$tag = $this->parser->addSelfClosingTag($tagName, $startPos, 0, -101);
+		}
+		else
+		{
+			$tag = $this->parser->addTagPair($tagName, $startPos, 0, $endPos, 0, -101);
+		}
+		if ($align)
+		{
+			$tag->setAttribute('align', $align);
+		}
+	}
+	protected function createHeadTags($startPos, $endPos)
+	{
+		$this->parser->addTagPair('THEAD', $startPos, 0, $endPos, 0, -103);
+	}
+	protected function createIgnoreTag($pos, $len)
+	{
+		$this->tableTag->cascadeInvalidationTo($this->parser->addIgnoreTag($pos, $len, 1000));
+	}
+	protected function createRowTags($startPos, $endPos)
+	{
+		$this->parser->addTagPair('TR', $startPos, 0, $endPos, 0, -102);
+	}
+	protected function createSeparatorTag(array $row)
+	{
+		$this->createIgnoreTag($row['pos'] - 1, 1 + strlen($row['line']));
+	}
+	protected function createTableTags($startPos, $endPos)
+	{
+		$this->tableTag = $this->parser->addTagPair('TABLE', $startPos, 0, $endPos, 0, -104);
+	}
+	protected function endTable()
+	{
+		if ($this->hasValidTable())
+		{
+			$this->table['cols'] = $this->parseColumnAlignments($this->table['rows'][1]['line']);
+			$this->tables[]      = $this->table;
+		}
+		unset($this->table);
+	}
+	protected function hasValidTable()
+	{
+		return (isset($this->table) && count($this->table['rows']) > 2 && $this->isValidSeparator($this->table['rows'][1]['line']));
+	}
+	protected function isValidSeparator($line)
+	{
+		return (bool) preg_match('/^ *:?-+:?(?:(?:\\+| *\\| *):?-+:?)+ *$/', $line);
+	}
+	protected function overwriteBlockquoteCallback(array $m)
+	{
+		return strtr($m[0], '>', ' ');
+	}
+	protected function overwriteEscapes()
+	{
+		if (strpos($this->text, '\\|') !== false)
+		{
+			$this->text = preg_replace('/\\\\[\\\\|]/', '..', $this->text);
+		}
+	}
+	protected function overwriteInlineCodeCallback(array $m)
+	{
+		return strtr($m[0], '|', '.');
+	}
+	protected function overwriteMarkdown()
+	{
+		if (strpos($this->text, '`') !== false)
+		{
+			$this->text = preg_replace_callback('/`[^`]*`/', [$this, 'overwriteInlineCodeCallback'], $this->text);
+		}
+		if (strpos($this->text, '>') !== false)
+		{
+			$this->text = preg_replace_callback('/^(?:> ?)+/m', [$this, 'overwriteBlockquoteCallback'], $this->text);
+		}
+	}
+	protected function parseColumnAlignments($line)
+	{
+		$align = [
+			0b00 => '',
+			0b01 => 'right',
+			0b10 => 'left',
+			0b11 => 'center'
+		];
+
+		$cols = [];
+		preg_match_all('/(:?)-+(:?)/', $line, $matches, PREG_SET_ORDER);
+		foreach ($matches as $m)
+		{
+			$key = (!empty($m[1]) ? 2 : 0) + (!empty($m[2]) ? 1 : 0);
+			$cols[] = $align[$key];
+		}
+
+		return $cols;
+	}
+	protected function processCurrentTable()
+	{
+		$firstRow = $this->table['rows'][0];
+		$lastRow  = end($this->table['rows']);
+		$this->createTableTags($firstRow['pos'], $lastRow['pos'] + strlen($lastRow['line']));
+
+		$this->addTableHead();
+		$this->createSeparatorTag($this->table['rows'][1]);
+		$this->addTableBody();
+	}
+	protected function processTables()
+	{
+		foreach ($this->tables as $table)
+		{
+			$this->table = $table;
+			$this->processCurrentTable();
 		}
 	}
 }
