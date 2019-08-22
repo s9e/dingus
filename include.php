@@ -549,7 +549,7 @@ class Parser
 		}
 
 		$matches = [];
-		if (isset($pluginConfig['regexp']))
+		if (isset($pluginConfig['regexp'], $pluginConfig['regexpLimit']))
 		{
 			$matches = $this->getMatches($pluginConfig['regexp'], $pluginConfig['regexpLimit']);
 			if (empty($matches))
@@ -2755,22 +2755,13 @@ class Parser extends ParserBase
 	}
 	protected function captureAttributes(Tag $tag, $elName, $str)
 	{
-		preg_match_all(
-			'/[a-z][-a-z0-9]*(?>\\s*=\\s*(?>"[^"]*"|\'[^\']*\'|[^\\s"\'=<>`]+))?/i',
-			$str,
-			$attrMatches
-		);
+		$regexp = '/([a-z][-a-z0-9]*)(?>\\s*=\\s*("[^"]*"|\'[^\']*\'|[^\\s"\'=<>`]+))?/i';
+		preg_match_all($regexp, $str, $matches, PREG_SET_ORDER);
 
-		foreach ($attrMatches[0] as $attrMatch)
+		foreach ($matches as $m)
 		{
-			$pos = strpos($attrMatch, '=');
-			if ($pos === false)
-			{
-				$pos = strlen($attrMatch);
-				$attrMatch .= '=' . strtolower($attrMatch);
-			}
-			$attrName  = strtolower(trim(substr($attrMatch, 0, $pos)));
-			$attrValue = trim(substr($attrMatch, 1 + $pos));
+			$attrName  = strtolower($m[1]);
+			$attrValue = $m[2] ?? $attrName;
 			if (isset($this->config['aliases'][$elName][$attrName]))
 			{
 				$attrName = $this->config['aliases'][$elName][$attrName];
@@ -3029,9 +3020,7 @@ class Blocks extends AbstractPass
 					if ($textBoundary > $codeTag->getPos())
 					{
 						$this->text->overwrite($codeTag->getPos(), $textBoundary - $codeTag->getPos());
-
-						$endTag = $this->parser->addEndTag('CODE', $textBoundary, 0, -1);
-						$endTag->pairWith($codeTag);
+						$codeTag->pairWith($this->parser->addEndTag('CODE', $textBoundary, 0, -1));
 					}
 					else
 					{
@@ -3189,9 +3178,7 @@ class Blocks extends AbstractPass
 
 					if (isset($codeTag) && $m[5][0] === $codeFence)
 					{
-						$endTag = $this->parser->addEndTag('CODE', $tagPos, $tagLen, -1);
-						$endTag->pairWith($codeTag);
-
+						$codeTag->pairWith($this->parser->addEndTag('CODE', $tagPos, $tagLen, -1));
 						$this->parser->addIgnoreTag($textBoundary, $tagPos - $textBoundary);
 						$this->text->overwrite($codeTag->getPos(), $tagPos + $tagLen - $codeTag->getPos());
 						$codeTag = null;
@@ -3342,7 +3329,7 @@ class Emphasis extends AbstractPass
 	}
 	protected function adjustStartingPositions()
 	{
-		if (isset($this->emPos) && $this->emPos === $this->strongPos)
+		if ($this->emPos >= 0 && $this->emPos === $this->strongPos)
 		{
 			if ($this->closeEm)
 			{
@@ -3360,13 +3347,13 @@ class Emphasis extends AbstractPass
 		{
 			--$this->remaining;
 			$this->parser->addTagPair('EM', $this->emPos, 1, $this->emEndPos, 1);
-			$this->emPos = null;
+			$this->emPos = -1;
 		}
 		if ($this->closeStrong)
 		{
 			$this->remaining -= 2;
 			$this->parser->addTagPair('STRONG', $this->strongPos, 2, $this->strongEndPos, 2);
-			$this->strongPos = null;
+			$this->strongPos = -1;
 		}
 	}
 	protected function parseEmphasisByCharacter($character, $regexp)
@@ -3425,8 +3412,8 @@ class Emphasis extends AbstractPass
 	}
 	protected function processEmphasisBlock(array $block)
 	{
-		$this->emPos     = null;
-		$this->strongPos = null;
+		$this->emPos     = -1;
+		$this->strongPos = -1;
 		foreach ($block as list($matchPos, $matchLen))
 		{
 			$this->processEmphasisMatch($matchPos, $matchLen);
@@ -3438,8 +3425,8 @@ class Emphasis extends AbstractPass
 		$canClose = !$this->text->isAfterWhitespace($matchPos);
 		$closeLen = ($canClose) ? min($matchLen, 3) : 0;
 
-		$this->closeEm      = ($closeLen & 1) && isset($this->emPos);
-		$this->closeStrong  = ($closeLen & 2) && isset($this->strongPos);
+		$this->closeEm      = ($closeLen & 1) && $this->emPos     >= 0;
+		$this->closeStrong  = ($closeLen & 2) && $this->strongPos >= 0;
 		$this->emEndPos     = $matchPos;
 		$this->strongEndPos = $matchPos;
 		$this->remaining    = $matchLen;
@@ -3931,13 +3918,13 @@ class Parser extends ParserBase
 
 		$this->createBodyTags($this->table['rows'][2]['pos'], $this->pos);
 	}
-	protected function addTableCell($tagName, $align, $text)
+	protected function addTableCell($tagName, $align, $content)
 	{
 		$startPos  = $this->pos;
-		$endPos    = $startPos + strlen($text);
+		$endPos    = $startPos + strlen($content);
 		$this->pos = $endPos;
 
-		preg_match('/^( *).*?( *)$/', $text, $m);
+		preg_match('/^( *).*?( *)$/', $content, $m);
 		if ($m[1])
 		{
 			$ignoreLen = strlen($m[1]);
@@ -4053,7 +4040,7 @@ class Parser extends ParserBase
 	}
 	protected function overwriteBlockquoteCallback(array $m)
 	{
-		return strtr($m[0], '>', ' ');
+		return strtr($m[0], '!>', '  ');
 	}
 	protected function overwriteEscapes()
 	{
@@ -4074,7 +4061,7 @@ class Parser extends ParserBase
 		}
 		if (strpos($this->text, '>') !== false)
 		{
-			$this->text = preg_replace_callback('/^(?:> ?)+/m', [$this, 'overwriteBlockquoteCallback'], $this->text);
+			$this->text = preg_replace_callback('/^(?:>!? ?)+/m', [$this, 'overwriteBlockquoteCallback'], $this->text);
 		}
 	}
 	protected function parseColumnAlignments($line)
@@ -4344,4 +4331,4 @@ class Superscript extends AbstractScript
 	}
 }
 namespace s9e\TextFormatter;
-const VERSION = '2.1.1';
+const VERSION = '2.1.2';
