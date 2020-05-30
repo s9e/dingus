@@ -1,17 +1,17 @@
 [
     {
         "name": "s9e/regexp-builder",
-        "version": "1.4.3",
-        "version_normalized": "1.4.3.0",
+        "version": "1.4.4",
+        "version_normalized": "1.4.4.0",
         "source": {
             "type": "git",
             "url": "https://github.com/s9e/RegexpBuilder.git",
-            "reference": "59d0167a909659d718f53964f7653d2c83a5f8fe"
+            "reference": "605b33841a766abd40ba3d07c15d0f62b5e7f033"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/s9e/RegexpBuilder/zipball/59d0167a909659d718f53964f7653d2c83a5f8fe",
-            "reference": "59d0167a909659d718f53964f7653d2c83a5f8fe",
+            "url": "https://api.github.com/repos/s9e/RegexpBuilder/zipball/605b33841a766abd40ba3d07c15d0f62b5e7f033",
+            "reference": "605b33841a766abd40ba3d07c15d0f62b5e7f033",
             "shasum": ""
         },
         "require": {
@@ -19,9 +19,9 @@
             "php": ">=5.5.1"
         },
         "require-dev": {
-            "phpunit/phpunit": "<5.8"
+            "phpunit/phpunit": "*"
         },
-        "time": "2019-04-26T17:55:23+00:00",
+        "time": "2020-01-08T02:46:22+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
@@ -40,18 +40,60 @@
         ]
     },
     {
-        "name": "s9e/text-formatter",
-        "version": "2.1.2",
-        "version_normalized": "2.1.2.0",
+        "name": "s9e/sweetdom",
+        "version": "1.0.1",
+        "version_normalized": "1.0.1.0",
         "source": {
             "type": "git",
-            "url": "https://github.com/s9e/TextFormatter.git",
-            "reference": "de2752a252047ef8899dab0ac0880be306bca474"
+            "url": "https://github.com/s9e/SweetDOM.git",
+            "reference": "f3a58c723fbe04d92ebcef5c8c7913bb364f58cd"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/de2752a252047ef8899dab0ac0880be306bca474",
-            "reference": "de2752a252047ef8899dab0ac0880be306bca474",
+            "url": "https://api.github.com/repos/s9e/SweetDOM/zipball/f3a58c723fbe04d92ebcef5c8c7913bb364f58cd",
+            "reference": "f3a58c723fbe04d92ebcef5c8c7913bb364f58cd",
+            "shasum": ""
+        },
+        "require": {
+            "ext-dom": "*",
+            "php": ">=7.1"
+        },
+        "require-dev": {
+            "phpunit/phpunit": "*"
+        },
+        "time": "2020-05-25T15:01:02+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "s9e\\SweetDOM\\": "src"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "description": "Syntactic sugar for the DOM API with a focus on XSLT 1.0 template manipulation.",
+        "homepage": "https://github.com/s9e/SweetDOM/",
+        "keywords": [
+            "dom",
+            "xsl",
+            "xslt"
+        ]
+    },
+    {
+        "name": "s9e/text-formatter",
+        "version": "2.7.0",
+        "version_normalized": "2.7.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/s9e/TextFormatter.git",
+            "reference": "ebeadcdb7c1ed11633de56ca05fd8300b7e31487"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/ebeadcdb7c1ed11633de56ca05fd8300b7e31487",
+            "reference": "ebeadcdb7c1ed11633de56ca05fd8300b7e31487",
             "shasum": ""
         },
         "require": {
@@ -59,11 +101,13 @@
             "ext-filter": "*",
             "lib-pcre": ">=8.13",
             "php": ">=7.1",
-            "s9e/regexp-builder": "^1.4"
+            "s9e/regexp-builder": "^1.4",
+            "s9e/sweetdom": "^1.0"
         },
         "require-dev": {
             "matthiasmullie/minify": "*",
-            "phpunit/phpunit": "^7 || 8.2.*"
+            "phpunit/phpunit": "*",
+            "sami/sami": "4.*"
         },
         "suggest": {
             "ext-curl": "Improves the performance of the MediaEmbed plugin and some JavaScript minifiers",
@@ -74,10 +118,10 @@
             "ext-xsl": "Enables the XSLT renderer",
             "ext-zlib": "Enables gzip compression when scraping content via the MediaEmbed plugin"
         },
-        "time": "2019-08-22T21:47:11+00:00",
+        "time": "2020-05-30T14:00:48+00:00",
         "type": "library",
         "extra": {
-            "version": "2.1.2"
+            "version": "2.7.0"
         },
         "installation-source": "dist",
         "autoload": {

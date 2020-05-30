@@ -20,6 +20,7 @@ preload('Plugins/HTMLElements/Parser.php');
 preload('Plugins/HTMLEntities/Parser.php');
 preload('Plugins/MediaEmbed/Parser.php');
 preload('Plugins/PipeTables/Parser.php');
+preload('Plugins/TaskLists/Parser.php');
 
 function preload($path)
 {
@@ -40,6 +41,8 @@ https://www.youtube.com/watch?v=QH2-TGUlwu4
 <!-- -->
 <b>..</b>
 &amp;
+
+- [x] checked
 
 a|b
 -|-
@@ -116,7 +119,7 @@ foreach ($classNamesByScore as $classNames)
 	foreach ($classNames as $className)
 	{
 		$filepath = $rootDir . strtr(substr($className, 17), '\\', '/') . '.php';
-		$file .= substr(file_get_contents($filepath), 5);
+		$file .= preg_replace('(^\\N++)', '', file_get_contents($filepath));
 	}
 }
 

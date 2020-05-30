@@ -7,5 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     's9e\\TextFormatter\\' => array($vendorDir . '/s9e/text-formatter/src'),
+    's9e\\SweetDOM\\' => array($vendorDir . '/s9e/sweetdom/src'),
     's9e\\RegexpBuilder\\' => array($vendorDir . '/s9e/regexp-builder/src'),
 );
