@@ -42,20 +42,24 @@
             "keywords": [
                 "regexp"
             ],
+            "support": {
+                "issues": "https://github.com/s9e/RegexpBuilder/issues",
+                "source": "https://github.com/s9e/RegexpBuilder/tree/1.4.4"
+            },
             "time": "2020-01-08T02:46:22+00:00"
         },
         {
             "name": "s9e/sweetdom",
-            "version": "1.0.1",
+            "version": "2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/s9e/SweetDOM.git",
-                "reference": "f3a58c723fbe04d92ebcef5c8c7913bb364f58cd"
+                "reference": "5fc62bc1f4756650924e5cd1b429afcf34542722"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/s9e/SweetDOM/zipball/f3a58c723fbe04d92ebcef5c8c7913bb364f58cd",
-                "reference": "f3a58c723fbe04d92ebcef5c8c7913bb364f58cd",
+                "url": "https://api.github.com/repos/s9e/SweetDOM/zipball/5fc62bc1f4756650924e5cd1b429afcf34542722",
+                "reference": "5fc62bc1f4756650924e5cd1b429afcf34542722",
                 "shasum": ""
             },
             "require": {
@@ -82,20 +86,24 @@
                 "xsl",
                 "xslt"
             ],
-            "time": "2020-05-25T15:01:02+00:00"
+            "support": {
+                "issues": "https://github.com/s9e/SweetDOM/issues",
+                "source": "https://github.com/s9e/SweetDOM/tree/2.0.0"
+            },
+            "time": "2020-12-08T16:34:58+00:00"
         },
         {
             "name": "s9e/text-formatter",
-            "version": "2.7.0",
+            "version": "2.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/s9e/TextFormatter.git",
-                "reference": "ebeadcdb7c1ed11633de56ca05fd8300b7e31487"
+                "reference": "52e1d46415f93ea1c8fed9846d8240fb5396b238"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/ebeadcdb7c1ed11633de56ca05fd8300b7e31487",
-                "reference": "ebeadcdb7c1ed11633de56ca05fd8300b7e31487",
+                "url": "https://api.github.com/repos/s9e/TextFormatter/zipball/52e1d46415f93ea1c8fed9846d8240fb5396b238",
+                "reference": "52e1d46415f93ea1c8fed9846d8240fb5396b238",
                 "shasum": ""
             },
             "require": {
@@ -104,12 +112,12 @@
                 "lib-pcre": ">=8.13",
                 "php": ">=7.1",
                 "s9e/regexp-builder": "^1.4",
-                "s9e/sweetdom": "^1.0"
+                "s9e/sweetdom": "^2.0"
             },
             "require-dev": {
+                "code-lts/doctum": "*",
                 "matthiasmullie/minify": "*",
-                "phpunit/phpunit": "*",
-                "sami/sami": "4.*"
+                "phpunit/phpunit": "*"
             },
             "suggest": {
                 "ext-curl": "Improves the performance of the MediaEmbed plugin and some JavaScript minifiers",
@@ -122,7 +130,7 @@
             },
             "type": "library",
             "extra": {
-                "version": "2.7.0"
+                "version": "2.8.0"
             },
             "autoload": {
                 "psr-4": {
@@ -133,7 +141,7 @@
             "license": [
                 "MIT"
             ],
-            "description": "Multi-purpose text formatting and markup library. Plugins offer support for BBCodes, Markdown, emoticons, HTML, embedding media (YouTube, etc...), enhanced typography and more.",
+            "description": "Multi-purpose text formatting and markup library. Plugins offer support for BBCodes, Markdown, emoticons, HTML, embedding third-party media (YouTube, etc...), enhanced typography and more.",
             "homepage": "https://github.com/s9e/TextFormatter/",
             "keywords": [
                 "bbcode",
@@ -152,7 +160,11 @@
                 "parser",
                 "shortcodes"
             ],
-            "time": "2020-05-30T14:00:48+00:00"
+            "support": {
+                "issues": "https://github.com/s9e/TextFormatter/issues",
+                "source": "https://github.com/s9e/TextFormatter/tree/2.8.0"
+            },
+            "time": "2020-12-09T14:01:49+00:00"
         }
     ],
     "packages-dev": [],
@@ -163,5 +175,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "1.1.0"
+    "plugin-api-version": "2.0.0"
 }
